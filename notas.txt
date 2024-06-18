@@ -1,0 +1,4 @@
+- completar funcoes de analise sintatica que não estao completas (por exemplo, lidar com os casos de iteracao, como varias variaveis depois de var)
+- ser mais especifico no tipo de erro sintatico que pode acontecer em cada um
+- indicar a linha do arquivo de entrada em que ocorreu o erro, seja ele léxico ou sintático e escrever no arquivo de saida de erro
+- a lógica do "fator esperado" parece não estar fazendo sentido

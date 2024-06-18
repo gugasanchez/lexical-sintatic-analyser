@@ -44,6 +44,38 @@ typedef enum
     erro_lexico
 } tipo_token;
 
+// Funções protótipos
+const char *obterNomeTipoToken(tipo_token tipo);
+tipo_token verificarPalavraReservada(char *palavra);
+tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro);
+void obterProximoToken();
+void erro(char *mensagem);
+void casaToken(tipo_token esperado);
+void programa();
+void bloco();
+void declaracao();
+void constante();
+void mais_const();
+void variavel();
+void mais_var();
+void procedimento();
+void comando();
+void mais_cmd();
+void expressao();
+void operador_unario();
+void termo();
+void mais_termos();
+void fator();
+void mais_fatores();
+void condicao();
+void relacional();
+
+// Variáveis globais
+tipo_token tokenAtual;
+FILE *arquivoEntrada, *arquivoSaida, *arquivoSaidaErro;
+
+//////////////////////////////////////////////////////// ANÁLISE LÉXICA ////////////////////////////////////////////////////////
+
 // Função que retorna o nome do tipo de token para impressão
 const char *obterNomeTipoToken(tipo_token tipo)
 {
@@ -98,6 +130,8 @@ const char *obterNomeTipoToken(tipo_token tipo)
         return "simbolo_maior";
     case maior_igual:
         return "simbolo_maior_igual";
+    case virgula:
+        return "simbolo_virgula";
     case ponto_virgula:
         return "simbolo_ponto_virgula";
     case ponto:
@@ -140,7 +174,7 @@ tipo_token verificarPalavraReservada(char *palavra)
 }
 
 // Obtenção e processamento de tokens
-void obterToken(FILE *entrada, FILE *saida)
+tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
 {
     char caractereAtual, proximoCaractere;
     char token[COMPRIMENTO_MAX_TOKEN];
@@ -160,20 +194,15 @@ void obterToken(FILE *entrada, FILE *saida)
             }
             if (caractereAtual == EOF)
             {
-                fprintf(saida, "Erro: fim de arquivo inesperado dentro de um comentário\n");
-                return;
+                fprintf(saida, "%s,fim de arquivo inesperado\n", token);
+                fprintf(saidaErro, "Erro léxico na linha #: fim de arquivo inesperado dentro de um comentário\n");
+                return erro_lexico;
             }
             continue;
         }
 
         // Ignora espaços
         if (isspace(caractereAtual))
-        {
-            continue;
-        }
-
-        // Ignora vírgulas
-        if (caractereAtual == ',')
         {
             continue;
         }
@@ -188,10 +217,9 @@ void obterToken(FILE *entrada, FILE *saida)
             }
             ungetc(caractereAtual, entrada);
             token[indiceToken] = '\0';
-            indiceToken = 0;
             tipo = verificarPalavraReservada(token); // Verifica se a palavra é reservada
             fprintf(saida, "%s,%s\n", token, obterNomeTipoToken(tipo));
-            continue;
+            return tipo;
         }
 
         // Processa tokens numéricos
@@ -204,9 +232,8 @@ void obterToken(FILE *entrada, FILE *saida)
             }
             ungetc(caractereAtual, entrada);
             token[indiceToken] = '\0';
-            indiceToken = 0;
             fprintf(saida, "%s,%s\n", token, obterNomeTipoToken(numero));
-            continue;
+            return numero;
         }
 
         // Processa tokens que são símbolos (virgula, operadores, barra...)
@@ -214,36 +241,38 @@ void obterToken(FILE *entrada, FILE *saida)
         {
         case ';':
             fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(ponto_virgula));
-            break;
+            return ponto_virgula;
 
         case '.':
             fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(ponto));
-            break;
+            return ponto;
 
         case ':':
             // Verifica o próximo caractere para determinar se forma o token de atribuição
             if ((proximoCaractere = fgetc(entrada)) == '=')
             {
                 fprintf(saida, ":=,%s\n", obterNomeTipoToken(atribuicao));
+                return atribuicao;
             }
             else
             {
                 ungetc(proximoCaractere, entrada);
                 fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(desconhecido));
+                return desconhecido;
             }
-            break;
 
         case '+':
         case '-':
         case '*':
         case '/':
             // Grava token de operação matemática (mais, menos, vezes, divisão)
-            fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(caractereAtual == '+' ? mais : (caractereAtual == '-' ? menos : (caractereAtual == '*' ? vezes : divisao))));
-            break;
+            tipo = (caractereAtual == '+' ? mais : (caractereAtual == '-' ? menos : (caractereAtual == '*' ? vezes : divisao)));
+            fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(tipo));
+            return tipo;
 
         case '=': // Igualdade (não é atribuição)
             fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(igual));
-            break;
+            return igual;
 
         case '<':
             // Verifica o próximo caractere para checar se é '<>', '<=' ou '<'
@@ -251,17 +280,19 @@ void obterToken(FILE *entrada, FILE *saida)
             if (proximoCaractere == '>')
             {
                 fprintf(saida, "<>,%s\n", obterNomeTipoToken(diferente));
+                return diferente;
             }
             else if (proximoCaractere == '=')
             {
                 fprintf(saida, "<=,%s\n", obterNomeTipoToken(menor_igual));
+                return menor_igual;
             }
             else
             {
                 ungetc(proximoCaractere, entrada);
                 fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(menor));
+                return menor;
             }
-            break;
 
         case '>':
             // Verifica o próximo caractere para checar se é '<>', '>=' ou '>'
@@ -269,39 +300,294 @@ void obterToken(FILE *entrada, FILE *saida)
             if (proximoCaractere == '=')
             {
                 fprintf(saida, ">=,%s\n", obterNomeTipoToken(maior_igual));
+                return maior_igual;
             }
             else
             {
                 ungetc(proximoCaractere, entrada);
                 fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(maior));
+                return maior;
             }
-            break;
+
+        case ',':
+            fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(virgula));
+            return virgula;
 
         default:
             // Grava como erro léxico outros simbolos não identificados
             fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(erro_lexico));
+            fprintf(saidaErro, "Erro léxico na linha #: %c,%s\n", caractereAtual, obterNomeTipoToken(erro_lexico));
+            return erro_lexico;
         }
+    }
+    return nulo; // Retorna nulo se atingir o final do arquivo
+}
+
+//////////////////////////////////////////////////////// ANÁLISE SINTÁTICA ////////////////////////////////////////////////////////
+
+void obterProximoToken()
+{
+    // Chame a função do analisador léxico aqui para obter o próximo token
+    tokenAtual = obterToken(arquivoEntrada, arquivoSaida, arquivoSaidaErro);
+}
+
+void erro(char *mensagem)
+{
+    fprintf(arquivoSaidaErro, "Erro sintático: %s\n", mensagem);
+    // Implementar modo pânico para recuperação
+    // Exemplo simples: continue até encontrar um ponto e vírgula ou ponto
+    while (tokenAtual != ponto_virgula && tokenAtual != ponto && tokenAtual != nulo)
+    {
+        obterProximoToken();
+    }
+    if (tokenAtual == ponto_virgula)
+    {
+        obterProximoToken();
+    }
+}
+
+void casaToken(tipo_token esperado)
+{
+    if (tokenAtual == esperado)
+    {
+        obterProximoToken();
+    }
+    else
+    {
+        erro("Token inesperado");
+    }
+}
+
+void programa()
+{
+    bloco();
+    casaToken(ponto);
+}
+
+void bloco()
+{
+    declaracao();
+    comando();
+}
+
+void declaracao()
+{
+    constante();
+    variavel();
+    procedimento();
+}
+
+void constante()
+{
+    if (tokenAtual == constsimbolo)
+    {
+        casaToken(constsimbolo);
+        casaToken(identificador);
+        casaToken(igual);
+        casaToken(numero);
+        mais_const();
+        casaToken(ponto_virgula);
+    }
+}
+
+void mais_const()
+{
+    while (tokenAtual == virgula)
+    {
+        casaToken(virgula);
+        casaToken(identificador);
+        casaToken(igual);
+        casaToken(numero);
+        mais_const(); // mexi aqui
+    }
+}
+
+void variavel()
+{
+    if (tokenAtual == varsimbolo)
+    {
+        casaToken(varsimbolo);
+        casaToken(identificador);
+        mais_var();
+        casaToken(ponto_virgula);
+    }
+}
+
+void mais_var()
+{
+    while (tokenAtual == virgula)
+    {
+        casaToken(virgula);
+        casaToken(identificador);
+        mais_var(); // mexi aqui
+    }
+}
+
+void procedimento()
+{
+    while (tokenAtual == procsimbolo)
+    {
+        casaToken(procsimbolo);
+        casaToken(identificador);
+        casaToken(ponto_virgula);
+        bloco();
+        casaToken(ponto_virgula);
+        procedimento(); // mexi aqui
+    }
+}
+
+void comando()
+{
+    switch (tokenAtual)
+    {
+    case identificador:
+        casaToken(identificador);
+        casaToken(atribuicao);
+        expressao();
+        break;
+    case chamadasimbolo:
+        casaToken(chamadasimbolo);
+        casaToken(identificador);
+        break;
+    case iniciosimbolo:
+        casaToken(iniciosimbolo);
+        comando();
+        mais_cmd();
+        casaToken(finsimbolo);
+        break;
+    case sesimbolo:
+        casaToken(sesimbolo);
+        condicao();
+        casaToken(entaosimbolo);
+        comando();
+        break;
+    case enquantosimbolo:
+        casaToken(enquantosimbolo);
+        condicao();
+        casaToken(facasimbolo);
+        comando();
+        break;
+    default:
+        break; // Comando vazio (lambda)
+    }
+}
+
+void mais_cmd()
+{
+    while (tokenAtual == ponto_virgula)
+    {
+        casaToken(ponto_virgula);
+        comando();
+    }
+}
+
+void expressao()
+{
+    operador_unario();
+    termo();
+    mais_termos();
+}
+
+void operador_unario()
+{
+    if (tokenAtual == mais || tokenAtual == menos)
+    {
+        casaToken(tokenAtual);
+    }
+}
+
+void termo()
+{
+    fator();
+    mais_fatores();
+}
+
+void mais_termos()
+{
+    while (tokenAtual == mais || tokenAtual == menos)
+    {
+        casaToken(tokenAtual);
+        termo();
+    }
+}
+
+void fator()
+{
+    switch (tokenAtual)
+    {
+    case identificador:
+        casaToken(identificador);
+        break;
+    case numero:
+        casaToken(numero);
+        break;
+    case parentese_esq:
+        casaToken(parentese_esq);
+        expressao();
+        casaToken(parentese_dir);
+        break;
+    default:
+        erro("Fator esperado");
+    }
+}
+
+void mais_fatores()
+{
+    while (tokenAtual == vezes || tokenAtual == divisao)
+    {
+        casaToken(tokenAtual);
+        fator();
+    }
+}
+
+void condicao()
+{
+    if (tokenAtual == impar)
+    {
+        casaToken(impar);
+        expressao();
+    }
+    else
+    {
+        expressao();
+        relacional();
+        expressao();
+    }
+}
+
+void relacional()
+{
+    switch (tokenAtual)
+    {
+    case igual:
+    case diferente:
+    case menor:
+    case menor_igual:
+    case maior:
+    case maior_igual:
+        casaToken(tokenAtual);
+        break;
+    default:
+        erro("Operador relacional esperado");
     }
 }
 
 int main(int argc, char *argv[])
 {
-    // Verifica se a entrada está de acordo com o padrão
-    if (argc != 3)
+    if (argc != 4)
     {
-        fprintf(stderr, "Uso: %s <arquivo de entrada> <arquivo de saída>\n", argv[0]);
+        fprintf(stderr, "Uso: %s <arquivo de entrada> <arquivo de saída> <arquivo de saída de erro>\n", argv[0]);
         return 1;
     }
 
-    // Abre arquivos de entrada (modo read) e saída (modo write)
-    FILE *arquivoEntrada = fopen(argv[1], "r");
+    arquivoEntrada = fopen(argv[1], "r");
     if (!arquivoEntrada)
     {
         perror("Erro ao abrir arquivo de entrada");
         return 1;
     }
 
-    FILE *arquivoSaida = fopen(argv[2], "w");
+    arquivoSaida = fopen(argv[2], "w");
     if (!arquivoSaida)
     {
         perror("Erro ao abrir arquivo de saída");
@@ -309,13 +595,28 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    obterToken(arquivoEntrada, arquivoSaida);
+    arquivoSaidaErro = fopen(argv[3], "w");
+    if (!arquivoSaidaErro)
+    {
+        perror("Erro ao abrir arquivo de saída de erro");
+        fclose(arquivoEntrada);
+        return 1;
+    }
 
-    // Fechamento dos arquivos
+    obterProximoToken();
+    programa();
+
+    if (tokenAtual != ponto)
+    {
+        // erro("Ponto final esperado");
+    }
+    else
+    {
+        fprintf(arquivoSaida, "Compilação bem-sucedida\n");
+    }
+
     fclose(arquivoEntrada);
     fclose(arquivoSaida);
+    fclose(arquivoSaidaErro);
     return 0;
 }
-
-// suprimir comentario
-// colocar fim de arquivo inesperado
