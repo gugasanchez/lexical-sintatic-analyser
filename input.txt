@@ -1,0 +1,31 @@
+CONST pi = 3; { definição de constante }
+VAR x, y, z; { declaração de variáveis }
+
+{ Definição de procedimento com um bloco interno }
+PROCEDURE calcArea;
+VAR radius;
+BEGIN
+    :radius := 2;
+    x := pi * radius * radius; { cálculo da área do círculo }
+END;
+
+BEGIN
+    x := 10;
+    y := 20;
+    z := x + y;
+    CALL calcArea; { chamada de procedimento }
+    IF x > y THEN { condicional }
+        z :=@ x - y;
+    WHILE z <> 0 DO { loop }
+        z := z - 1;
+
+    { Teste de operadores unários e relacionais }
+    IF ODD x THEN
+        z := -z;
+    IF x = y THEN
+        z := z / 2;
+    IF x <= y THEN
+        z := z * 2;
+    IF x >= y THEN
+        z := z + 100;
+END.

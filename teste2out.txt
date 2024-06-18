@@ -1,0 +1,39 @@
+VAR,VAR
+n,ident
+fat,ident
+;,simbolo_ponto_virgula
+{testando comentário não fechado
+BGIN {erro em palavra chave}, comentario
+n,ident
+:=,simbolo_atribuicao
+4,numero
+;,simbolo_ponto_virgula
+{erro em identificador de variável}, comentario
+f,ident
+@,<ERRO_LEXICO>
+t,ident
+:=,simbolo_atribuicao
+1,numero
+;,simbolo_ponto_virgula
+{erro operador relacional}, comentario
+WHILE,WHILE
+n,ident
+>=,simbolo_maior_igual
+1,numero
+DO,DO
+BEGIN,BEGIN
+fat,ident
+:=,simbolo_atribuicao
+fat,ident
+*,simbolo_multiplicacao
+n,ident
+;,simbolo_ponto_virgula
+n,ident
+:=,simbolo_atribuicao
+n,ident
+-,simbolo_menos
+1,numero
+;,simbolo_ponto_virgula
+END,END
+END,END
+.,simbolo_ponto
