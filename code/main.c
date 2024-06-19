@@ -41,7 +41,7 @@ typedef enum
     procsimbolo,
     comentario,
     desconhecido,
-    erro_lexico
+    erro_lexico,
 } tipo_token;
 
 // Funções protótipos
@@ -73,13 +73,13 @@ void relacional();
 // Variáveis globais
 tipo_token tokenAtual;
 FILE *arquivoEntrada, *arquivoSaida, *arquivoSaidaErro;
+int linhaAtual = 1;
 
 //////////////////////////////////////////////////////// ANÁLISE LÉXICA ////////////////////////////////////////////////////////
 
 // Função que retorna o nome do tipo de token para impressão
 const char *obterNomeTipoToken(tipo_token tipo)
 {
-    // String correspondente a cada tipo de token
     switch (tipo)
     {
     case constsimbolo:
@@ -184,18 +184,27 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
     // Leitura do input até chegar no fim do arquivo
     while ((caractereAtual = fgetc(entrada)) != EOF)
     {
+        // Rastrear a linha atual
+        if (caractereAtual == '\n')
+        {
+            linhaAtual++;
+        }
+
         // Identifica comentário
         if (caractereAtual == '{')
         {
             // Ignorar comentário
             while ((caractereAtual = fgetc(entrada)) != '}' && caractereAtual != EOF)
             {
-                // Continuar lendo até encontrar o fim do comentário ou o fim do arquivo
+                if (caractereAtual == '\n')
+                {
+                    linhaAtual++;
+                }
             }
             if (caractereAtual == EOF)
             {
                 fprintf(saida, "%s,fim de arquivo inesperado\n", token);
-                fprintf(saidaErro, "Erro léxico na linha #: fim de arquivo inesperado dentro de um comentário\n");
+                fprintf(saidaErro, "Erro léxico na linha %d: fim de arquivo inesperado dentro de um comentário\n", linhaAtual);
                 return erro_lexico;
             }
             continue;
@@ -248,7 +257,6 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
             return ponto;
 
         case ':':
-            // Verifica o próximo caractere para determinar se forma o token de atribuição
             if ((proximoCaractere = fgetc(entrada)) == '=')
             {
                 fprintf(saida, ":=,%s\n", obterNomeTipoToken(atribuicao));
@@ -314,9 +322,8 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
             return virgula;
 
         default:
-            // Grava como erro léxico outros simbolos não identificados
             fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(erro_lexico));
-            fprintf(saidaErro, "Erro léxico na linha #: %c,%s\n", caractereAtual, obterNomeTipoToken(erro_lexico));
+            fprintf(saidaErro, "Erro léxico na linha %d: caractere '%c' inválido\n", linhaAtual, caractereAtual);
             return erro_lexico;
         }
     }
@@ -327,15 +334,12 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
 
 void obterProximoToken()
 {
-    // Chame a função do analisador léxico aqui para obter o próximo token
     tokenAtual = obterToken(arquivoEntrada, arquivoSaida, arquivoSaidaErro);
 }
 
 void erro(char *mensagem)
 {
-    fprintf(arquivoSaidaErro, "Erro sintático: %s\n", mensagem);
-    // Implementar modo pânico para recuperação
-    // Exemplo simples: continue até encontrar um ponto e vírgula ou ponto
+    fprintf(arquivoSaidaErro, "Erro sintático na linha %d: %s\n", linhaAtual - 1, mensagem);
     while (tokenAtual != ponto_virgula && tokenAtual != ponto && tokenAtual != nulo)
     {
         obterProximoToken();
@@ -354,7 +358,9 @@ void casaToken(tipo_token esperado)
     }
     else
     {
-        erro("Token inesperado");
+        char msg[100];
+        sprintf(msg, "Token '%s' esperado", obterNomeTipoToken(esperado));
+        erro(msg);
     }
 }
 
@@ -398,7 +404,6 @@ void mais_const()
         casaToken(identificador);
         casaToken(igual);
         casaToken(numero);
-        mais_const(); // mexi aqui
     }
 }
 
@@ -419,7 +424,6 @@ void mais_var()
     {
         casaToken(virgula);
         casaToken(identificador);
-        mais_var(); // mexi aqui
     }
 }
 
@@ -432,7 +436,6 @@ void procedimento()
         casaToken(ponto_virgula);
         bloco();
         casaToken(ponto_virgula);
-        procedimento(); // mexi aqui
     }
 }
 
@@ -468,7 +471,8 @@ void comando()
         comando();
         break;
     default:
-        break; // Comando vazio (lambda)
+        erro("Comando inválido");
+        break;
     }
 }
 
@@ -524,10 +528,23 @@ void fator()
     case parentese_esq:
         casaToken(parentese_esq);
         expressao();
-        casaToken(parentese_dir);
+        if (tokenAtual == parentese_dir)
+        {
+            casaToken(parentese_dir);
+        }
+        else
+        {
+            erro("Parêntese direito esperado");
+        }
         break;
+    case erro_lexico:
+        // erro("Erro léxico");
+        obterProximoToken(); // Move to the next token to attempt recovery
+        break;
+
     default:
         erro("Fator esperado");
+        obterProximoToken(); // Move to the next token to attempt recovery
     }
 }
 
@@ -576,7 +593,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 4)
     {
-        fprintf(stderr, "Uso: %s <arquivo de entrada> <arquivo de saída> <arquivo de saída de erro>\n", argv[0]);
+        fprintf(stderr, "Uso: %s <arquivo de entrada> <arquivo de saída erro>\n", argv[0]);
         return 1;
     }
 
@@ -600,6 +617,7 @@ int main(int argc, char *argv[])
     {
         perror("Erro ao abrir arquivo de saída de erro");
         fclose(arquivoEntrada);
+        fclose(arquivoSaida);
         return 1;
     }
 
@@ -608,7 +626,7 @@ int main(int argc, char *argv[])
 
     if (tokenAtual != ponto)
     {
-        // erro("Ponto final esperado");
+        erro("Ponto final esperado");
     }
     else
     {

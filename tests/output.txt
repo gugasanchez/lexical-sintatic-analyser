@@ -23,3 +23,5 @@ c,ident
 +,simbolo_mais
 b,ident
 END,END
+.,simbolo_ponto
+Compilação bem-sucedida

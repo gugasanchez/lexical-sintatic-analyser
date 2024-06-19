@@ -1,5 +1,0 @@
-Erro sintático: Token inesperado
-Erro sintático: Token inesperado
-Erro léxico na linha #: @,<ERRO_LEXICO>
-Erro sintático: Fator esperado
-Erro sintático: Token inesperado
