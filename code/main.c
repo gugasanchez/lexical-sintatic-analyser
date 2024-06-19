@@ -40,6 +40,7 @@ typedef enum
     varsimbolo,
     procsimbolo,
     comentario,
+    quebralinha,
     desconhecido,
     erro_lexico,
 } tipo_token;
@@ -132,6 +133,8 @@ const char *obterNomeTipoToken(tipo_token tipo)
         return "simbolo_maior_igual";
     case virgula:
         return "simbolo_virgula";
+    case quebralinha:
+        return "quebra_linha";
     case ponto_virgula:
         return "simbolo_ponto_virgula";
     case ponto:
@@ -335,6 +338,7 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
 void obterProximoToken()
 {
     tokenAtual = obterToken(arquivoEntrada, arquivoSaida, arquivoSaidaErro);
+    printf("aqui: %s\n", obterNomeTipoToken(tokenAtual));
 }
 
 void erro(char *mensagem)
@@ -352,13 +356,17 @@ void erro(char *mensagem)
 
 void casaToken(tipo_token esperado)
 {
+    printf("---------------------> ESPERADO: %s\n", obterNomeTipoToken(esperado));
     if (tokenAtual == esperado)
     {
+        printf("---------------------> ENCONTRADO: %s\n", obterNomeTipoToken(tokenAtual));
         obterProximoToken();
     }
     else
     {
         char msg[100];
+
+        printf("---------------------> NÃO ESPERADO: %s\n", obterNomeTipoToken(tokenAtual));
         sprintf(msg, "Token '%s' esperado", obterNomeTipoToken(esperado));
         erro(msg);
     }
@@ -624,13 +632,11 @@ int main(int argc, char *argv[])
     obterProximoToken();
     programa();
 
+    // printf("%s", obterNomeTipoToken(tokenAtual));
+
     if (tokenAtual != ponto)
     {
         erro("Ponto final esperado");
-    }
-    else
-    {
-        fprintf(arquivoSaida, "Compilação bem-sucedida\n");
     }
 
     fclose(arquivoEntrada);
