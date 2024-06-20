@@ -50,7 +50,7 @@ const char *obterNomeTipoToken(tipo_token tipo);
 tipo_token verificarPalavraReservada(char *palavra);
 tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro);
 void obterProximoToken();
-void erro(char *mensagem);
+void erro(char *mensagem, tipo_token esperado);
 void casaToken(tipo_token esperado);
 void programa();
 void bloco();
@@ -75,6 +75,7 @@ void relacional();
 tipo_token tokenAtual;
 FILE *arquivoEntrada, *arquivoSaida, *arquivoSaidaErro;
 int linhaAtual = 1;
+long posicaoAnterior;
 
 //////////////////////////////////////////////////////// ANÁLISE LÉXICA ////////////////////////////////////////////////////////
 
@@ -337,20 +338,35 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
 
 void obterProximoToken()
 {
+    posicaoAnterior = ftell(arquivoEntrada); // Armazena a posição antes de ler o próximo token
     tokenAtual = obterToken(arquivoEntrada, arquivoSaida, arquivoSaidaErro);
     printf("aqui: %s\n", obterNomeTipoToken(tokenAtual));
 }
 
-void erro(char *mensagem)
+void erro(char *mensagem, tipo_token esperado)
 {
-    fprintf(arquivoSaidaErro, "Erro sintático na linha %d: %s\n", linhaAtual - 1, mensagem);
-    while (tokenAtual != ponto_virgula && tokenAtual != ponto && tokenAtual != nulo)
+    fprintf(arquivoSaidaErro, "Erro sintático na linha %d: %s\n", linhaAtual, mensagem);
+
+    switch (esperado)
     {
+    case ponto_virgula || entaosimbolo || facasimbolo || finsimbolo:
         obterProximoToken();
-    }
-    if (tokenAtual == ponto_virgula)
-    {
+        break;
+
+    case ponto:
+        while (tokenAtual != ponto_virgula && tokenAtual != ponto && tokenAtual != nulo)
+        {
+            obterProximoToken();
+        }
+        if (tokenAtual == ponto_virgula || tokenAtual == ponto)
+        {
+            return; // Return here to ensure we don't consume the next token
+        }
+        break;
+
+    default:
         obterProximoToken();
+        break;
     }
 }
 
@@ -359,16 +375,18 @@ void casaToken(tipo_token esperado)
     printf("---------------------> ESPERADO: %s\n", obterNomeTipoToken(esperado));
     if (tokenAtual == esperado)
     {
-        printf("---------------------> ENCONTRADO: %s\n", obterNomeTipoToken(tokenAtual));
+        printf("---------------------> ENCONTRADO (✅): %s\n", obterNomeTipoToken(tokenAtual));
         obterProximoToken();
     }
     else
     {
         char msg[100];
 
-        printf("---------------------> NÃO ESPERADO: %s\n", obterNomeTipoToken(tokenAtual));
+        printf("---------------------> ENCONTRADO (❌): %s\n", obterNomeTipoToken(tokenAtual));
         sprintf(msg, "Token '%s' esperado", obterNomeTipoToken(esperado));
-        erro(msg);
+        fseek(arquivoEntrada, posicaoAnterior, SEEK_SET); // Retrocede a posição do arquivo para a posição anterior
+        linhaAtual--;                                     // Decrementa a linha atual para a linha correta
+        erro(msg, esperado);
     }
 }
 
@@ -479,7 +497,7 @@ void comando()
         comando();
         break;
     default:
-        erro("Comando inválido");
+        erro("Comando inválido", identificador | chamadasimbolo | iniciosimbolo | sesimbolo | enquantosimbolo);
         break;
     }
 }
@@ -542,7 +560,7 @@ void fator()
         }
         else
         {
-            erro("Parêntese direito esperado");
+            erro("Parêntese direito esperado", parentese_dir);
         }
         break;
     case erro_lexico:
@@ -551,7 +569,7 @@ void fator()
         break;
 
     default:
-        erro("Fator esperado");
+        erro("Fator esperado", identificador | numero | parentese_esq);
         obterProximoToken(); // Move to the next token to attempt recovery
     }
 }
@@ -593,7 +611,7 @@ void relacional()
         casaToken(tokenAtual);
         break;
     default:
-        erro("Operador relacional esperado");
+        erro("Operador relacional esperado", igual | diferente | menor | menor_igual | maior | maior_igual);
     }
 }
 
@@ -636,7 +654,7 @@ int main(int argc, char *argv[])
 
     if (tokenAtual != ponto)
     {
-        erro("Ponto final esperado");
+        erro("Ponto final esperado", ponto);
     }
 
     fclose(arquivoEntrada);
