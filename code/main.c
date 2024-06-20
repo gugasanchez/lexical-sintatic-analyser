@@ -395,6 +395,10 @@ void erro(char *mensagem, tipo_token esperado)
 
     switch (esperado)
     {
+    // Para tokens que são terminais de uma linha, o modo pânico não pode ocorrer procurando
+    // por um ponto e vírgula, ponto ou nulo, pois isso poderia ignorar um erro de sintaxe
+    // posterior, já que já está no fim da linha. Assim, para os casos abaixo, o modo pânico
+    // é simplesmente ignorar o token atual e obter o próximo token.
     case ponto_virgula:
     case entaosimbolo:
     case facasimbolo:
@@ -406,6 +410,9 @@ void erro(char *mensagem, tipo_token esperado)
         ignorarSaida = 0;
         break;
 
+    // Modo pânico padrão: em nosso código, o modo pânico por padrão ocorre em ignorar
+    // tokens até que se encontre um ponto e vírgula, ponto ou nulo, que são os tokens de
+    // sincronização do analisador sintático.
     default:
         ignorarSaida = 1;
         while (tokenAtual != ponto_virgula && tokenAtual != ponto && tokenAtual != nulo)
@@ -628,7 +635,6 @@ void fator()
 
     default: //
         erro("Fator esperado", identificador | numero | parentese_esq);
-        // obterProximoToken();
     }
 }
 

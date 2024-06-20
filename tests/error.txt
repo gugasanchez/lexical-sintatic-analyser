@@ -1,5 +1,3 @@
-Erro sintático na linha 2: Token 'simbolo_ponto_virgula' esperado
-Erro sintático na linha 6: Token 'THEN' esperado
-Erro léxico na linha 8: caractere '@' inválido
-Erro sintático na linha 9: Token 'simbolo_ponto' esperado
-Erro sintático na linha 10: Ponto final esperado
+Erro sintático na linha 1: Token 'simbolo_ponto_virgula' esperado
+Erro sintático na linha 4: Token 'THEN' esperado
+Erro léxico na linha 6: caractere '@' inválido
