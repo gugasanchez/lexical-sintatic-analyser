@@ -5,6 +5,7 @@ b,ident
 ,,simbolo_virgula
 c,ident
 BEGIN,BEGIN
+BEGIN,BEGIN
 a,ident
 :=,simbolo_atribuicao
 2,numero
@@ -13,6 +14,7 @@ IF,IF
 a,ident
 >,simbolo_maior
 2,numero
+b,ident
 b,ident
 :=,simbolo_atribuicao
 3,numero
