@@ -349,11 +349,16 @@ void erro(char *mensagem, tipo_token esperado)
 
     switch (esperado)
     {
-    case ponto_virgula || entaosimbolo || facasimbolo || finsimbolo:
+    case ponto_virgula:
+    case entaosimbolo:
+    case facasimbolo:
+    case iniciosimbolo:
+    case finsimbolo:
+    case ponto:
         obterProximoToken();
         break;
 
-    case ponto:
+    default:
         while (tokenAtual != ponto_virgula && tokenAtual != ponto && tokenAtual != nulo)
         {
             obterProximoToken();
@@ -363,16 +368,18 @@ void erro(char *mensagem, tipo_token esperado)
             return; // Return here to ensure we don't consume the next token
         }
         break;
-
-    default:
-        obterProximoToken();
-        break;
     }
 }
 
 void casaToken(tipo_token esperado)
 {
     printf("---------------------> ESPERADO: %s\n", obterNomeTipoToken(esperado));
+
+    if (tokenAtual == ponto)
+    {
+        return;
+    }
+
     if (tokenAtual == esperado)
     {
         printf("---------------------> ENCONTRADO (✅): %s\n", obterNomeTipoToken(tokenAtual));
@@ -568,9 +575,9 @@ void fator()
         obterProximoToken(); // Move to the next token to attempt recovery
         break;
 
-    default:
+    default: //
         erro("Fator esperado", identificador | numero | parentese_esq);
-        obterProximoToken(); // Move to the next token to attempt recovery
+        // obterProximoToken(); // Move to the next token to attempt recovery
     }
 }
 
