@@ -1,0 +1,7 @@
+Erro léxico na linha 4: caractere '@' inválido
+Erro sintático na linha 3: Token 'simbolo_ponto_virgula' esperado
+Erro léxico na linha 3: caractere '@' inválido
+Erro sintático na linha 3: Comando inválido
+Erro sintático na linha 4: Comando inválido
+Erro sintático na linha 3: Token 'simbolo_ponto' esperado
+Erro sintático na linha 3: Ponto final esperado

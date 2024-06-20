@@ -76,6 +76,7 @@ tipo_token tokenAtual;
 FILE *arquivoEntrada, *arquivoSaida, *arquivoSaidaErro;
 int linhaAtual = 1;
 long posicaoAnterior;
+int ignorarSaida = 0; // Flag para ignorar a escrita no arquivo de saída
 
 //////////////////////////////////////////////////////// ANÁLISE LÉXICA ////////////////////////////////////////////////////////
 
@@ -231,7 +232,10 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
             ungetc(caractereAtual, entrada);
             token[indiceToken] = '\0';
             tipo = verificarPalavraReservada(token); // Verifica se a palavra é reservada
-            fprintf(saida, "%s,%s\n", token, obterNomeTipoToken(tipo));
+            if (!ignorarSaida)
+            {
+                fprintf(saida, "%s,%s\n", token, obterNomeTipoToken(tipo));
+            }
             return tipo;
         }
 
@@ -245,7 +249,10 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
             }
             ungetc(caractereAtual, entrada);
             token[indiceToken] = '\0';
-            fprintf(saida, "%s,%s\n", token, obterNomeTipoToken(numero));
+            if (!ignorarSaida)
+            {
+                fprintf(saida, "%s,%s\n", token, obterNomeTipoToken(numero));
+            }
             return numero;
         }
 
@@ -253,23 +260,35 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
         switch (caractereAtual)
         {
         case ';':
-            fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(ponto_virgula));
+            if (!ignorarSaida)
+            {
+                fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(ponto_virgula));
+            }
             return ponto_virgula;
 
         case '.':
-            fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(ponto));
+            if (!ignorarSaida)
+            {
+                fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(ponto));
+            }
             return ponto;
 
         case ':':
             if ((proximoCaractere = fgetc(entrada)) == '=')
             {
-                fprintf(saida, ":=,%s\n", obterNomeTipoToken(atribuicao));
+                if (!ignorarSaida)
+                {
+                    fprintf(saida, ":=,%s\n", obterNomeTipoToken(atribuicao));
+                }
                 return atribuicao;
             }
             else
             {
                 ungetc(proximoCaractere, entrada);
-                fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(desconhecido));
+                if (!ignorarSaida)
+                {
+                    fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(desconhecido));
+                }
                 return desconhecido;
             }
 
@@ -279,11 +298,17 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
         case '/':
             // Grava token de operação matemática (mais, menos, vezes, divisão)
             tipo = (caractereAtual == '+' ? mais : (caractereAtual == '-' ? menos : (caractereAtual == '*' ? vezes : divisao)));
-            fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(tipo));
+            if (!ignorarSaida)
+            {
+                fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(tipo));
+            }
             return tipo;
 
         case '=': // Igualdade (não é atribuição)
-            fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(igual));
+            if (!ignorarSaida)
+            {
+                fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(igual));
+            }
             return igual;
 
         case '<':
@@ -291,18 +316,27 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
             proximoCaractere = fgetc(entrada);
             if (proximoCaractere == '>')
             {
-                fprintf(saida, "<>,%s\n", obterNomeTipoToken(diferente));
+                if (!ignorarSaida)
+                {
+                    fprintf(saida, "<>,%s\n", obterNomeTipoToken(diferente));
+                }
                 return diferente;
             }
             else if (proximoCaractere == '=')
             {
-                fprintf(saida, "<=,%s\n", obterNomeTipoToken(menor_igual));
+                if (!ignorarSaida)
+                {
+                    fprintf(saida, "<=,%s\n", obterNomeTipoToken(menor_igual));
+                }
                 return menor_igual;
             }
             else
             {
                 ungetc(proximoCaractere, entrada);
-                fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(menor));
+                if (!ignorarSaida)
+                {
+                    fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(menor));
+                }
                 return menor;
             }
 
@@ -311,22 +345,34 @@ tipo_token obterToken(FILE *entrada, FILE *saida, FILE *saidaErro)
             proximoCaractere = fgetc(entrada);
             if (proximoCaractere == '=')
             {
-                fprintf(saida, ">=,%s\n", obterNomeTipoToken(maior_igual));
+                if (!ignorarSaida)
+                {
+                    fprintf(saida, ">=,%s\n", obterNomeTipoToken(maior_igual));
+                }
                 return maior_igual;
             }
             else
             {
                 ungetc(proximoCaractere, entrada);
-                fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(maior));
+                if (!ignorarSaida)
+                {
+                    fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(maior));
+                }
                 return maior;
             }
 
         case ',':
-            fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(virgula));
+            if (!ignorarSaida)
+            {
+                fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(virgula));
+            }
             return virgula;
 
         default:
-            fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(erro_lexico));
+            if (!ignorarSaida)
+            {
+                fprintf(saida, "%c,%s\n", caractereAtual, obterNomeTipoToken(erro_lexico));
+            }
             fprintf(saidaErro, "Erro léxico na linha %d: caractere '%c' inválido\n", linhaAtual, caractereAtual);
             return erro_lexico;
         }
@@ -355,18 +401,23 @@ void erro(char *mensagem, tipo_token esperado)
     case iniciosimbolo:
     case finsimbolo:
     case ponto:
+        ignorarSaida = 1;
         obterProximoToken();
+        ignorarSaida = 0;
         break;
 
     default:
+        ignorarSaida = 1;
         while (tokenAtual != ponto_virgula && tokenAtual != ponto && tokenAtual != nulo)
         {
             obterProximoToken();
         }
         if (tokenAtual == ponto_virgula || tokenAtual == ponto)
         {
-            return; // Return here to ensure we don't consume the next token
+            ignorarSaida = 0;
+            return;
         }
+        ignorarSaida = 0;
         break;
     }
 }
@@ -572,12 +623,12 @@ void fator()
         break;
     case erro_lexico:
         // erro("Erro léxico");
-        obterProximoToken(); // Move to the next token to attempt recovery
+        obterProximoToken();
         break;
 
     default: //
         erro("Fator esperado", identificador | numero | parentese_esq);
-        // obterProximoToken(); // Move to the next token to attempt recovery
+        // obterProximoToken();
     }
 }
 
